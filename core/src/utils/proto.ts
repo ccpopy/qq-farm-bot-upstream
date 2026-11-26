@@ -42,6 +42,7 @@ async function loadProto(): Promise<void> {
         getResourcePath('proto', 'collectionpb.proto'),
         getResourcePath('proto', 'interactpb.proto'),
         getResourcePath('proto', 'activitypb.proto'),
+        getResourcePath('proto', 'maple-market.proto'),
         getResourcePath('proto', 'muge.proto'),
         getResourcePath('proto', 'seasonpb.proto'),
         getResourcePath('proto', 'solartermspb.proto'),
@@ -75,6 +76,7 @@ async function loadProto(): Promise<void> {
     types.MilkTeaOperateReply = root.lookupType('gamepb.activitypb.MilkTeaOperateReply');
     types.MilkTeaGetGroupReply = root.lookupType('gamepb.activitypb.MilkTeaGetGroupReply');
     types.MilkTeaOperateRequest = root.lookupType('gamepb.activitypb.MilkTeaOperateRequest');
+    types.MapleMarketOperateRequest = root.lookupType('gamepb.activitypb.MapleMarketOperateRequest');
     types.PlayerLoginRequest = root.lookupType('gamepb.userpb.PlayerLoginRequest');
     types.PlayerLoginReply = root.lookupType('gamepb.userpb.PlayerLoginReply');
     types.PlayerSceneLoginRequest = root.lookupType('gamepb.globalscenepb.PlayerSceneLoginRequest');
