@@ -5,6 +5,14 @@ const fs = require('node:fs');
 const https = require('node:https');
 const os = require('node:os');
 const path = require('node:path');
+const { EventEmitter } = require('node:events');
+
+function httpStub() {
+    const request = new EventEmitter();
+    request.destroy = () => { request.destroyed = true; request.emit('close'); };
+    request.end = () => {};
+    return request;
+}
 
 const {
     MINI_PROGRAM_APP_IDS,
@@ -15,10 +23,7 @@ const {
     resolveTsdkHostProfile,
 } = require('../dist/utils/tsdk-runtime');
 
-const EXPECTED_QQ_CREDENTIAL_BYTES = Buffer.from(
-    "344e0d774812caf143fabc83bfe2fef9f863b450d5ee978e5c7b50dfa10f02df7b677d833d874225f604cf60c63e08da1cfa3c1ab344bfe48666fdd7a8346b0b9cffcfd95ef200bcdcf7630452636e8ccafe81eb044f6c5f35878687870003f7c94abda5d3b8",
-    "hex",
-);
+const EXPECTED_QQ_CREDENTIAL_BYTES = Buffer.from('001292e53ecbc23771eaf71cbff7d33b4a593f8a80a7d22616fa6be3aee3c02ddff16b7e7ee0e09b76b6d64ae539d601f882aa84f130e2f182e1170bc31d1a5ee1765e35610b9e68f1271ed85d25557a424b7f864b8ad1773451b2061c0e2a8c86abcd', 'hex');
 
 test('TSDK selects the mini-program host profile by account platform', () => {
     assert.deepEqual(resolveTsdkHostProfile('qq'), {
@@ -50,7 +55,7 @@ test('bundled TSDK matches the audited official QQ build', () => {
     const wasmPath = path.join(__dirname, '..', 'src', 'utils', 'tsdk.wasm');
     const hash = crypto.createHash('sha256').update(fs.readFileSync(wasmPath)).digest('hex');
 
-    assert.equal(TSDK_VERSION, 'v3.9.0.1792566360');
+    assert.equal(TSDK_VERSION, 'v3.9.0.1795598781');
     assert.equal(hash, TSDK_SHA256);
 });
 
@@ -60,18 +65,20 @@ test('QQ host inputs reproduce the complete audited credential byte vector', asy
     let runtime;
     try {
         // Initialization seeds server time synchronously; the delayed network refresh is irrelevant to this vector.
-        https.get = () => ({ on() { return this; } });
+        https.get = httpStub;
         runtime = new TsdkRuntime({
             accountId: 'credential-vector',
             dataDir: path.join(tempRoot, 'data'),
             platform: 'qq',
         });
         await runtime.init();
-        runtime.bindUser('tsdk-regression-openid');
+        runtime.bindUser('synthetic-qq-openid');
+        // Official synthetic harness lacks native host probes. Captured native credentials are compared separately.
+        runtime.normalizeQqHostFeatureState = () => {};
 
         const encoded = runtime.getEncryptedInitInfo();
         const decoded = Buffer.from(encoded, 'base64');
-        assert.equal(encoded.length, 136);
+        assert.equal(encoded.length, 132);
         assert.deepEqual(decoded, EXPECTED_QQ_CREDENTIAL_BYTES);
 
         const plaintext = Buffer.from('tsdk-transform-regression');
@@ -89,17 +96,50 @@ test('QQ host inputs reproduce the complete audited credential byte vector', asy
     }
 });
 
+test('WeChat normalizes the configured platform and matches the official synthetic host vector', async () => {
+    // Deterministic synthetic vector for WeChat package 87 (v3.9.0.1795598186), not a live session.
+    const expected = Buffer.from('8949fd272935978066465dde4b2bd8e846cf87227514c28a738243d822a541349169308e67bb1efa923417fde51c04f2aded5510d28d0b3e2f420cb0c8321c27c6df005b09b1fe10dc6fd5727b0e5c4239e6f53bc017adc4582bf9195a3adfa43118fcb79391185e13dc868c024633ce25eca2786a9b02', 'hex');
+    const { CONFIG } = require('../dist/config/config');
+    const originalOs = CONFIG.os;
+    const originalDevice = CONFIG.deviceInfo;
+    const originalGet = https.get;
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qq-farm-tsdk-wx-vector-'));
+    let runtime;
+    try {
+        CONFIG.os = ' Windows ';
+        CONFIG.deviceInfo = { ...originalDevice, deviceId: 'audit-model', sysSoftware: 'audit-system' };
+        https.get = httpStub;
+        runtime = new TsdkRuntime({ dataDir, platform: 'wx' });
+        assert.equal(runtime.getDeviceText(), 'audit-model;windows;audit-system;Node.js;');
+        assert.equal(new TsdkRuntime({ dataDir, platform: 'qq' }).getDeviceText(), 'windows;windows;windows 10.0;0;');
+        await runtime.init();
+        runtime.bindUser('synthetic-wx-openid');
+        assert.deepEqual(Buffer.from(runtime.getEncryptedInitInfo(), 'base64'), expected);
+        // Missing WeChat host capability remains visible; QQ's state adjustment does not run here.
+        const result = runtime.exports.C();
+        assert.equal(new Uint8Array(runtime.memory.buffer)[result + 1], 1);
+    } finally {
+        runtime?.destroy();
+        CONFIG.os = originalOs;
+        CONFIG.deviceInfo = originalDevice;
+        https.get = originalGet;
+        assert.ok(path.resolve(dataDir).startsWith(path.resolve(os.tmpdir()) + path.sep));
+        assert.ok(path.basename(dataDir).startsWith('qq-farm-tsdk-wx-vector-'));
+        fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+});
+
 test('WeChat loads its audited WASM and reports unsupported host calls without user data', async () => {
     const build = TSDK_BUILDS.wx;
-    assert.equal(build.version, 'v3.9.0.1792565883');
+    assert.equal(build.version, 'v3.9.0.1795598186');
     assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname, '../src/utils', build.file))).digest('hex'), build.sha256);
     const originalGet = https.get;
     const originalRequest = https.request;
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qq-farm-tsdk-wx-'));
     let runtime;
     try {
-        https.get = () => ({ on() { return this; } });
-        https.request = () => ({ on() { return this; }, end() {} });
+        https.get = httpStub;
+        https.request = httpStub;
         runtime = new TsdkRuntime({ dataDir, platform: 'wx' });
         await runtime.init();
         runtime.bindUser('synthetic-wx-openid');

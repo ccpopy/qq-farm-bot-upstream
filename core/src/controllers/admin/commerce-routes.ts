@@ -80,6 +80,17 @@ function mountCommerceRoutes(app: Application, ctx: AdminContext): void {
     app.get('/api/activities/milk-tea', withAccount((accountId: string, req: Request) => ctx.provider.getMilkTeaActivity(accountId, req.query.page || 'shop', req.query)));
     app.get('/api/activities/muge', withAccount((accountId: string) => ctx.provider.getMugeActivity(accountId)));
     app.post('/api/activities/muge/:action', withAccount((accountId: string, req: Request) => ctx.provider.operateMugeActivity(accountId, req.params.action, req.body)));
+    app.get('/api/activities/maple-market', withAccount((accountId: string) => ctx.provider.getMapleMarketActivity(accountId)));
+    app.get('/api/activities/maple-market/purchase-log', withAccount((accountId: string) => ctx.provider.getMapleMarketPurchaseLog(accountId)));
+    app.post('/api/activities/maple-market/claim-seed', withAccount((accountId: string) => ctx.provider.claimMapleMarketSeed(accountId)));
+    app.post('/api/activities/maple-market/share-boost', withAccount((accountId: string) => ctx.provider.shareMapleMarketBoost(accountId)));
+    app.post('/api/activities/maple-market/claim-commission', withAccount((accountId: string) => ctx.provider.claimMapleMarketCommission(accountId)));
+    app.post('/api/activities/maple-market/sell', withAccount((accountId: string, req: Request) => (
+        ctx.provider.sellMapleMarketCrop(accountId, req.body?.count, req.body?.expectedUnitPrice)
+    )));
+    app.post('/api/activities/maple-market/exchange', withAccount((accountId: string, req: Request) => (
+        ctx.provider.exchangeMapleMarketGoods(accountId, req.body?.goodsId, req.body?.count, req.body?.expectedUnitPrice)
+    )));
     app.post('/api/activities/milk-tea/:action', withAccount((accountId: string, req: Request) => ctx.provider.operateMilkTeaActivity(accountId, req.params.action, req.body)));
 
     app.get('/api/activities/share-reward/:activityId', withAccount((accountId: string, req: Request) => (

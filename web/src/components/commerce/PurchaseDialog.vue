@@ -10,6 +10,7 @@ const props = defineProps<{
   goods: MallGoodsDto | null
   limitLabel?: string
   pending?: boolean
+  verb?: string
 }>()
 
 const emit = defineEmits<{
@@ -17,6 +18,8 @@ const emit = defineEmits<{
   confirm: [count: number]
 }>()
 
+const actionVerb = computed(() => props.verb || '购买')
+const goodsDescription = computed(() => props.goods?.description || (props.goods?.rewards.length === 1 ? props.goods.rewards[0]?.description : '') || '')
 const count = ref(1)
 const maxCount = computed(() => purchaseMaxCount({
   limitRemaining: props.goods?.limit?.remaining ?? null,
@@ -44,7 +47,7 @@ function inputCount(event: Event) {
 
 <template>
   <div v-if="open && goods" class="purchase-mask" @click.self="!pending && emit('close')">
-    <section class="purchase-dialog" role="dialog" aria-modal="true" :aria-label="`购买${goods.name}`">
+    <section class="purchase-dialog" role="dialog" aria-modal="true" :aria-label="`${actionVerb}${goods.name}`">
       <!-- 头部：小图 + 名称 + 单价，主图不再单独占据大块面积 -->
       <header class="purchase-head">
         <CommerceItemImage :src="goods.rewards[0]?.image" :alt="goods.rewards[0]?.name" size="md" />
@@ -80,16 +83,20 @@ function inputCount(event: Event) {
           </li>
         </ul>
 
+        <p v-if="goodsDescription" class="purchase-desc">
+          {{ goodsDescription }}
+        </p>
+
         <div class="purchase-row">
           <div>
-            <span class="purchase-row__label">购买数量</span>
-            <small v-if="goods.limit">{{ limitLabel || '限购' }} · 还可购买 {{ maxCount }} 份</small>
+            <span class="purchase-row__label">{{ actionVerb }}数量</span>
+            <small v-if="goods.limit">{{ limitLabel || '限购' }} · 还可{{ actionVerb }} {{ maxCount }} 份</small>
           </div>
           <div class="stepper">
             <button type="button" title="减少" aria-label="减少" :disabled="pending || count <= 1" @click="setCount(count - 1)">
               <span class="i-carbon-subtract" />
             </button>
-            <input :value="count" inputmode="numeric" aria-label="购买数量" :disabled="pending || maxCount < 1" @input="inputCount">
+            <input :value="count" inputmode="numeric" :aria-label="`${actionVerb}数量`" :disabled="pending || maxCount < 1" @input="inputCount">
             <button type="button" title="增加" aria-label="增加" :disabled="pending || count >= maxCount" @click="setCount(count + 1)">
               <span class="i-carbon-add" />
             </button>
@@ -121,7 +128,7 @@ function inputCount(event: Event) {
           取消
         </NButton>
         <NButton type="primary" :loading="pending" :disabled="pending || maxCount < 1 || insufficient || balanceUnknown || !goods.purchasable" @click="emit('confirm', count)">
-          {{ pending ? '购买中' : goods.isFree ? '确认领取' : '确认购买' }}
+          {{ pending ? `${actionVerb}中` : goods.isFree ? '确认领取' : `确认${actionVerb}` }}
         </NButton>
       </footer>
     </section>
@@ -296,6 +303,18 @@ function inputCount(event: Event) {
   color: var(--ui-ink);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+}
+
+.purchase-desc {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--ui-radius-control);
+  color: var(--ui-muted);
+  background: var(--ui-surface-soft);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-line;
+  word-break: break-word;
 }
 
 .purchase-row {

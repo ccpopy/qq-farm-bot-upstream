@@ -8,6 +8,7 @@ export interface CommerceItemDto {
   name: string
   image: string
   rarity: number
+  description?: string
 }
 
 export interface PurchaseLimitDto {
@@ -34,6 +35,7 @@ export interface MallGoodsDto {
   purchasable: boolean
   purchaseStatus?: 'available' | 'sold_out' | 'owned' | 'ad_required' | 'share_required' | 'svip_required' | 'unavailable'
   unavailableReason?: string
+  description?: string
 }
 
 export interface MallCatalogDto {

@@ -8,6 +8,7 @@ import { stellarGameplay } from './stellar'
 import { weatherGameplay } from './weather'
 
 const gameplayModules: Record<ActivityGameplayKey, ActivityGameplayModule> = {
+  mapleMarket: { key: 'mapleMarket', defaultTab: 'mapleMarket', tabs: ['mapleMarket'] },
   muge: { key: 'muge', defaultTab: 'muge', tabs: ['muge'] },
   pet: petGameplay,
   wish: { key: 'wish', defaultTab: 'wish', tabs: ['wish'] },
@@ -27,6 +28,8 @@ function inferGameplayKey(activity: ActivityDirectoryItemDto): ActivityGameplayK
     return activity.gameplayKey
   if (activity.detailTarget === 'pet' || activity.activityIds.some(id => ['2026090100', '2026090101', '2026090102', '2026090103'].includes(id)))
     return 'pet'
+  if (activity.detailTarget === 'mapleMarket')
+    return 'mapleMarket'
   if (activity.detailTarget === 'weather')
     return 'weather'
   if (activity.detailTarget === 'charity')
@@ -39,6 +42,8 @@ function inferGameplayKey(activity: ActivityDirectoryItemDto): ActivityGameplayK
     return 'stellar'
 
   const activityIds = new Set(activity.activityIds.map(id => id.trim()))
+  if (['2026111707', '2026111708', '2026111709'].some(id => activityIds.has(id)))
+    return 'mapleMarket'
   if (['2026072700', '2026072701'].some(id => activityIds.has(id)))
     return 'stellar'
   if (['2026070300', '2026070301', '2026070302', '2026070303', '2026070304', '2026070305'].some(id => activityIds.has(id)))
@@ -51,6 +56,8 @@ function inferGameplayKey(activity: ActivityDirectoryItemDto): ActivityGameplayK
     return 'charity'
 
   const name = activity.name.trim()
+  if (name.includes('以薯换福') || name.includes('红薯小铺') || name.includes('枫糖集市'))
+    return 'mapleMarket'
   if (name.includes('雨落成诗'))
     return 'weather'
   if (name.includes('鹊桥寄情'))
