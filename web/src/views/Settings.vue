@@ -15,6 +15,7 @@ import AutomationSettingsForm from '@/components/settings/AutomationSettingsForm
 import BagSeedPriorityItem from '@/components/settings/BagSeedPriorityItem.vue'
 import PushChannelsManager from '@/components/settings/PushChannelsManager.vue'
 import ReleaseRollbackPanel from '@/components/settings/ReleaseRollbackPanel.vue'
+import SmtpSettings from '@/components/settings/SmtpSettings.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
@@ -2517,6 +2518,8 @@ onBeforeUnmount(() => {
                 </div>
               </section>
             </div>
+
+            <SmtpSettings class="xl:col-span-2" />
 
             <section class="system-update-card min-w-0 farm-card rounded-lg p-4 xl:col-span-2">
               <div class="mb-4 flex items-start gap-3">

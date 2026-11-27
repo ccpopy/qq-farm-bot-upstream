@@ -7,6 +7,7 @@ import { isPushChannelConfigured, PUSHOO_CHANNELS } from '../config/push-channel
 const crypto = require('node:crypto');
 const axios = require('axios').default;
 const pushoo = require('pushoo').default;
+const { sendEmailMessage, normalizeRecipients } = require('./email-push');
 
 const DINGTALK_WEBHOOK_PREFIX = 'https://oapi.dingtalk.com/robot/send?access_token=';
 const MEOW_DEFAULT_BASE_URL = 'https://api.chuckfang.com';
@@ -123,7 +124,26 @@ async function sendMeowMessage(payload: any): Promise<any> {
  * @param payload.content 必填 推送内容
  * @returns 推送结果
  */
+async function sendEmailChannel(payload: any): Promise<{ ok: boolean; code: string; msg: string; raw: any }> {
+    const recipients = normalizeRecipients(payload.endpoint || payload.token || '');
+    if (!recipients.length) throw new Error('邮箱渠道需要填写接收邮箱');
+    const info = await sendEmailMessage({
+        to: recipients.join(','),
+        subject: String(payload.title || ''),
+        text: String(payload.content || ''),
+    });
+    return {
+        ok: true,
+        code: 'ok',
+        msg: `邮件已发送至 ${recipients.join(', ')}`,
+        raw: info,
+    };
+}
+
 async function sendPushooMessage(payload: any = {}): Promise<{ ok: boolean; code: string; msg: string; raw: any }> {
+    if (String(payload.channel || '').trim().toLowerCase() === 'email') {
+        return sendEmailChannel(payload);
+    }
     const channel: string = assertRequiredText('channel', payload.channel);
     const endpoint: string = String(payload.endpoint || '').trim();
     const rawToken: string = String(payload.token || '').trim();
@@ -173,6 +193,7 @@ function pushChannelError(entry: OfflineReminderChannel, required: boolean): str
     if (required && !isPushChannelConfigured(entry)) {
         if (entry.channel === 'webhook') return 'Webhook 渠道需要填写接口地址';
         if (entry.channel === 'dingtalk') return '钉钉渠道需要填写 Webhook 地址';
+        if (entry.channel === 'email') return '邮箱渠道需要填写接收邮箱';
         return '当前推送渠道需要填写 Token';
     }
     if (entry.channel === 'dingtalk' && entry.endpoint) {

@@ -6,6 +6,7 @@ export {};
 const { DEFAULT_CLIENT_VERSION, DEFAULT_WX_CLIENT_VERSION, DEFAULT_TIME_ZONE, normalizeTimeZone, resolveClientVersionUpdatedAt } = require('../../config/config');
 
 const sharedState = require('./shared-state');
+const DEFAULT_SMTP = { ...sharedState.globalConfig.smtp };
 
 const {
     DEFAULT_OFFLINE_REMINDER,
@@ -63,6 +64,30 @@ function setUITheme(theme: unknown): UIConfig {
     const next: UIConfig['theme'] = (t === 'light') ? 'light' : 'dark';
     saveGlobalConfig({ ui: { ...globalConfig.ui, theme: next } });
     return getUI();
+}
+
+function normalizeSmtp(input: any): any {
+    const src = (input && typeof input === 'object') ? input : {};
+    const fallback = DEFAULT_SMTP;
+    const port = Number.parseInt(src.port, 10);
+    return {
+        host: String(src.host !== undefined ? src.host : fallback.host).trim() || fallback.host,
+        port: Number.isFinite(port) && port > 0 && port < 65536 ? port : fallback.port,
+        secure: src.secure !== false,
+        user: String(src.user !== undefined ? src.user : fallback.user).trim(),
+        pass: String(src.pass !== undefined ? src.pass : fallback.pass),
+        fromName: String(src.fromName !== undefined ? src.fromName : fallback.fromName).trim() || fallback.fromName,
+    };
+}
+
+function getSmtp(): any {
+    return normalizeSmtp(globalConfig.smtp);
+}
+
+function setSmtp(cfg: any): any {
+    const next = normalizeSmtp({ ...getSmtp(), ...(cfg || {}) });
+    saveGlobalConfig({ smtp: next });
+    return getSmtp();
 }
 
 function getOfflineReminder(): OfflineReminder {
@@ -209,6 +234,8 @@ module.exports = {
     setLoginSettings,
     getOfflineReminder,
     setOfflineReminder,
+    getSmtp,
+    setSmtp,
     getSystemConfig,
     setSystemConfig,
 };

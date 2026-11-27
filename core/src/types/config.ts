@@ -156,11 +156,21 @@ export interface SystemConfig {
   deviceInfo: DeviceInfo;
 }
 
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  fromName: string;
+}
+
 export interface GlobalConfig {
   accountConfigs: Record<string, AccountConfig>;
   defaultAccountConfig: AccountConfig;
   ui: UIConfig;
   loginSettings: LoginSettings;
   offlineReminder: OfflineReminder;
+  smtp: SmtpConfig;
   systemConfig: SystemConfig | null;
 }
