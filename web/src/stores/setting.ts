@@ -97,6 +97,7 @@ export interface PushChannelOption {
 }
 
 export const PUSH_CHANNEL_OPTIONS: PushChannelOption[] = [
+  { label: '邮箱', value: 'email', docUrl: '' },
   { label: 'Webhook(自定义接口)', value: 'webhook', docUrl: '' },
   { label: 'Qmsg 酱', value: 'qmsg', docUrl: 'https://qmsg.zendee.cn/' },
   { label: 'Server 酱', value: 'serverchan', docUrl: 'https://sct.ftqq.com/' },
@@ -165,6 +166,8 @@ export function isPushChannelConfigured(input?: Partial<OfflineChannelConfig>): 
     return false
   const endpoint = String(input.endpoint || '').trim()
   const token = String(input.token || '').trim()
+  if (channel === 'email')
+    return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(endpoint)
   if (channel === 'webhook')
     return endpoint.length > 0
   if (channel === 'dingtalk')

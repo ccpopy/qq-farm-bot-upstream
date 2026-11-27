@@ -99,12 +99,21 @@ const editingWasConfigured = computed(() => isPushChannelConfigured(editingExist
 const isDingTalk = computed(() => editingChannel.value === 'dingtalk')
 const isWebhook = computed(() => editingChannel.value === 'webhook')
 const isMeow = computed(() => editingChannel.value === 'meow')
-const usesEndpoint = computed(() => isWebhook.value || isDingTalk.value || isMeow.value)
+const isEmail = computed(() => editingChannel.value === 'email')
+const usesEndpoint = computed(() => isWebhook.value || isDingTalk.value || isMeow.value || isEmail.value)
 
-const endpointLabel = computed(() => isDingTalk.value ? 'Webhook 地址' : isMeow.value ? '接口地址（可选）' : '接口地址')
+const endpointLabel = computed(() => isDingTalk.value
+  ? 'Webhook 地址'
+  : isMeow.value
+    ? '接口地址（可选）'
+    : isEmail.value
+      ? '接收邮箱'
+      : '接口地址')
 const endpointPlaceholder = computed(() => isDingTalk.value
   ? '从钉钉群机器人设置页复制完整 Webhook'
-  : '接收消息的接口地址')
+  : isEmail.value
+    ? 'a@qq.com,b@example.com（多个用逗号或分号分隔）'
+    : '接收消息的接口地址')
 const tokenLabel = computed(() => isMeow.value ? '昵称' : 'Token')
 const tokenPlaceholder = computed(() => isMeow.value ? 'MeoW 注册昵称' : '接收端 token')
 
@@ -182,7 +191,9 @@ async function handleTestChannel() {
         ? '请填写 Webhook 接口地址'
         : isMeow.value
           ? '请填写 MeoW 昵称'
-          : '请填写接收端 Token'
+          : isEmail.value
+            ? '请填写至少一个有效的接收邮箱'
+            : '请填写接收端 Token'
     return
   }
   if (isDingTalk.value) {
@@ -230,7 +241,9 @@ function handleSaveChannel() {
         ? '请填写接口地址；如需移除该渠道，请点击左下角“清空配置”'
         : isMeow.value
           ? '请填写昵称；如需移除该渠道，请点击左下角“清空配置”'
-          : '请填写 Token；如需移除该渠道，请点击左下角“清空配置”'
+          : isEmail.value
+            ? '请填写接收邮箱；如需移除该渠道，请点击左下角“清空配置”'
+            : '请填写 Token；如需移除该渠道，请点击左下角“清空配置”'
     return
   }
 
@@ -459,7 +472,7 @@ function handleClearChannel() {
         />
 
         <BaseInput
-          v-if="!isDingTalk"
+          v-if="!isDingTalk && !isEmail"
           id="push-channel-token"
           v-model="draftToken"
           :type="isMeow ? 'text' : 'password'"
@@ -481,6 +494,10 @@ function handleClearChannel() {
             复制群机器人的完整 Webhook 地址；仅开启“加签”时需要填写密钥。
           </p>
         </template>
+
+        <p v-if="isEmail" class="text-xs text-[var(--ui-muted)] leading-relaxed">
+          邮件通过管理员在「系统设置 → 邮件服务（SMTP）」中配置的发件邮箱发送；这里只填接收邮箱，多个地址用逗号或分号分隔。
+        </p>
 
         <p v-if="dingTalkInlineError" class="text-xs text-red-600 dark:text-red-400">
           {{ dingTalkInlineError }}

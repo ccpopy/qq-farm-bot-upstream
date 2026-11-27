@@ -1,6 +1,7 @@
 import type { OfflineReminder, OfflineReminderChannel } from '../types/config';
 
 export const PUSHOO_CHANNELS = new Set([
+    'email',
     'webhook', 'qmsg', 'serverchan', 'pushplus', 'pushplushxtrip',
     'dingtalk', 'wecom', 'bark', 'gocqhttp', 'onebot', 'atri',
     'pushdeer', 'igot', 'telegram', 'feishu', 'ifttt', 'wecombot',
@@ -20,6 +21,7 @@ export function normalizePushChannel(input: Partial<OfflineReminderChannel>): Of
 }
 
 export function isPushChannelConfigured(entry: OfflineReminderChannel): boolean {
+    if (entry.channel === 'email') return Boolean(entry.endpoint);
     return Boolean(entry.channel === 'webhook' || entry.channel === 'dingtalk' ? entry.endpoint : entry.token);
 }
 

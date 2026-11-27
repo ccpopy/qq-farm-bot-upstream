@@ -531,6 +531,14 @@ const globalConfig: GlobalConfig = {
     },
     loginSettings: { ...DEFAULT_LOGIN_SETTINGS },
     offlineReminder: { ...DEFAULT_OFFLINE_REMINDER },
+    smtp: {
+        host: process.env.BOT_SMTP_HOST || '',
+        port: Number.parseInt(process.env.BOT_SMTP_PORT || '465', 10),
+        secure: String(process.env.BOT_SMTP_SECURE || 'true') !== 'false',
+        user: process.env.BOT_SMTP_USER || '',
+        pass: process.env.BOT_SMTP_PASS || '',
+        fromName: process.env.BOT_SMTP_FROM_NAME || 'QQ农场 Bot',
+    },
     systemConfig: null,
 };
 
@@ -565,6 +573,14 @@ function loadGlobalConfig(): void {
             // offlineReminder normalization done in global-config
             if (data.offlineReminder && typeof data.offlineReminder === 'object') {
                 globalConfig.offlineReminder = data.offlineReminder;
+            }
+            if (data.smtp && typeof data.smtp === 'object') {
+                globalConfig.smtp = {
+                    ...globalConfig.smtp,
+                    ...data.smtp,
+                    port: Number.parseInt(data.smtp.port, 10) || globalConfig.smtp.port,
+                    secure: data.smtp.secure !== false,
+                };
             }
 
             if (data.loginSettings && typeof data.loginSettings === 'object') {
